@@ -29,6 +29,14 @@ except ImportError:
     pass
 
 
+def minigrid_wrapper(env):
+    from gym_minigrid.wrappers import RGBImgObsWrapper, ImgObsWrapper
+    env.max_steps = 400
+    env = RGBImgObsWrapper(env, tile_size=6)
+    env = ImgObsWrapper(env)
+    return env
+
+
 def make_env(env_id, seed, rank, log_dir, allow_early_resets):
     def _thunk():
         if env_id.startswith("dm"):
@@ -56,11 +64,13 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
         if is_atari:
             if len(env.observation_space.shape) == 3:
                 env = wrap_deepmind(env)
-        elif len(env.observation_space.shape) == 3:
-            raise NotImplementedError(
-                "CNN models work only for atari,\n"
-                "please use a custom wrapper for a custom pixel input env.\n"
-                "See wrap_deepmind for an example.")
+        else:
+            env = minigrid_wrapper(env)
+
+        #     raise NotImplementedError(
+        #         "CNN models work only for atari,\n"
+        #         "please use a custom wrapper for a custom pixel input env.\n"
+        #         "See wrap_deepmind for an example.")
 
         # If the input has shape (W,H,3), wrap for PyTorch convolutions
         obs_shape = env.observation_space.shape
