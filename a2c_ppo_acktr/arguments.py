@@ -149,6 +149,16 @@ def get_args():
         action='store_true',
         default=False,
         help='use a linear schedule on the learning rate')
+    parser.add_argument(
+        '--name',
+        default="",
+        type=str,
+        help='Name for experiment')
+    parser.add_argument(
+        '--offset',
+        default=0,
+        type=int,
+        help='4room offset')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
