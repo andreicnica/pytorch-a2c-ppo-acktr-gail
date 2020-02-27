@@ -33,9 +33,13 @@ from gym.envs.registration import register as gym_register
 #     def observation(self, obs):
 #         return obs['image']
 
+import wandb
+
 
 def main():
     args = get_args()
+
+    wandb.init(project="fork-a2c-ppo", name=f"{args.env_name}_{args.name}")
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -52,8 +56,13 @@ def main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
+    env_args = None
+    if "FourRooms" in args.env_name:
+        env_args = {"goal_rand_offset": args.offset}
+
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
-                         args.gamma, args.log_dir, device, False, num_frame_stack=1)
+                         args.gamma, args.log_dir, device, False, num_frame_stack=1,
+                         env_args=env_args)
 
     actor_critic = Policy(
         envs.observation_space.shape,
@@ -192,6 +201,16 @@ def main():
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
+
+            wandb.log({"update": j, "timesteps": total_num_steps, "mean": np.mean(episode_rewards),
+                       "median": np.median(episode_rewards),
+                       "min": np.min(episode_rewards),
+                       "max":np.max(episode_rewards),
+                       "dist_entropy": dist_entropy,
+                       "value_loss": value_loss,
+                       "action_loss": action_loss,
+                       })
+
             print(
                 "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}\n"
                 .format(j, total_num_steps,
