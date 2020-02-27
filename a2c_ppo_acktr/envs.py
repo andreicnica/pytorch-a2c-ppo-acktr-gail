@@ -30,9 +30,9 @@ except ImportError:
 
 
 def minigrid_wrapper(env):
-    from gym_minigrid.wrappers import RGBImgObsWrapper, ImgObsWrapper
+    from gym_minigrid.wrappers import RGBImgObsWrapper, ImgObsWrapper, FullyObsWrapper
     env.max_steps = 400
-    env = RGBImgObsWrapper(env, tile_size=6)
+    env = FullyObsWrapper(env)
     env = ImgObsWrapper(env)
     return env
 

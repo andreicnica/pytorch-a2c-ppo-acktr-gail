@@ -176,8 +176,8 @@ class CNNBase(NNBase):
         print("INPUT SIZE", num_inputs)
 
         self.main = nn.Sequential(
-            init_(nn.Conv2d(num_inputs[0], 32, 8, stride=4)), nn.ReLU(),
-            init_(nn.Conv2d(32, 64, 4, stride=2)), nn.ReLU(),
+            init_(nn.Conv2d(num_inputs[0], 32, 3, stride=2)), nn.ReLU(),
+            init_(nn.Conv2d(32, 64, 3, stride=2)), nn.ReLU(),
             init_(nn.Conv2d(64, 32, 3, stride=1)), nn.ReLU(), Flatten(),
         )
         size_ln = self.main(torch.rand(1, *num_inputs)).size(1)
