@@ -100,7 +100,7 @@ def get_args():
     parser.add_argument(
         '--log-interval',
         type=int,
-        default=10,
+        default=1,
         help='log interval, one log per n updates (default: 10)')
     parser.add_argument(
         '--save-interval',
@@ -115,7 +115,7 @@ def get_args():
     parser.add_argument(
         '--num-env-steps',
         type=int,
-        default=10e6,
+        default=2e6,
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
         '--env-name',
@@ -159,6 +159,11 @@ def get_args():
         default=0,
         type=int,
         help='4room offset')
+    parser.add_argument(
+        '--use-wandb',
+        default=False,
+        type=bool,
+        help='plot online')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
