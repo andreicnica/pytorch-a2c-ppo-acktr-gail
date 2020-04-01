@@ -24,6 +24,9 @@ from gym_minigrid.register import register
 
 from gym.envs.registration import register as gym_register
 
+import csv
+
+
 #
 # class ImgObsWrapperNorm(gym.core.ObservationWrapper):
 #     def __init__(self, env):
@@ -36,10 +39,25 @@ from gym.envs.registration import register as gym_register
 import wandb
 
 
+LOG_HEADER = {
+    "update": None,
+    "timesteps": None,
+    "median": None,
+    "discounted_r": None,
+    "min": None,
+    "max": None,
+    "dist_entropy": None,
+    "value_loss": None,
+    "action_loss": None,
+}
+
+
 def main():
     args = get_args()
+    use_wandb = args.use_wandb
 
-    wandb.init(project="fork-a2c-ppo", name=f"{args.env_name}_{args.name}")
+    if use_wandb:
+        wandb.init(project="fork-a2c-ppo", name=f"{args.env_name}_{args.name}")
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -53,15 +71,31 @@ def main():
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
 
+    # Write log
+
+    flog = open(log_dir + "/logs.csv", 'w')
+    log_writer = csv.DictWriter(flog, LOG_HEADER.keys())
+    log_writer.writeheader()
+
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
     env_args = None
-    if "FourRooms" in args.env_name:
-        env_args = {"goal_rand_offset": args.offset}
+    if "MiniGrid" in args.env_name:
+        env_args = {
+            "goal_rand_offset": args.offset,
+            "size": 16,
+            "agent_pos": [1, 1],
+            "goal_pos": [8, 8],
+        }
+    print("ENV args:", env_args)
+    #
+    # envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
+    #                      args.gamma, args.log_dir, device, False, num_frame_stack=1,
+    #                      env_args=env_args)
 
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
-                         args.gamma, args.log_dir, device, False, num_frame_stack=1,
+                         args.gamma, None, device, False, num_frame_stack=1,
                          env_args=env_args)
 
     actor_critic = Policy(
@@ -69,6 +103,7 @@ def main():
         envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
+    print(actor_critic)
 
     if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
@@ -120,7 +155,10 @@ def main():
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
 
-    episode_rewards = deque(maxlen=10)
+    episode_rewards = deque([0] * 16, maxlen=16)
+
+    max_eprews_window = deque([0] * 5, maxlen=5)
+    max_eprews = 0.96
 
     start = time.time()
     num_updates = int(
@@ -135,15 +173,21 @@ def main():
 
         for step in range(args.num_steps):
             # Sample actions
+
             with torch.no_grad():
                 value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
                     rollouts.obs[step], rollouts.recurrent_hidden_states[step],
                     rollouts.masks[step])
 
             # Obser reward and next obs
-            obs, reward, done, infos = envs.step(action)
+            obs, reward, done, infos = envs.step(action.squeeze(1))
 
-            for info in infos:
+            for iii, info in enumerate(infos):
+                # TODO hardcode only add final R
+                if done[iii]:
+                    # info['episode'] = {"r": reward[iii]}
+                    info['episode'] = {"r": info['discounted_r']}
+
                 if 'episode' in info.keys():
                     episode_rewards.append(info['episode']['r'])
 
@@ -198,18 +242,31 @@ def main():
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, args.env_name + ".pt"))
 
+        max_eprews_window.append(np.mean(episode_rewards))
+        if np.mean(max_eprews_window) > max_eprews:
+            print(f"Reached mean return {max_eprews} for a window of {len(max_eprews_window)} steps")
+            exit()
+
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
 
-            wandb.log({"update": j, "timesteps": total_num_steps, "mean": np.mean(episode_rewards),
-                       "median": np.median(episode_rewards),
-                       "min": np.min(episode_rewards),
-                       "max":np.max(episode_rewards),
-                       "dist_entropy": dist_entropy,
-                       "value_loss": value_loss,
-                       "action_loss": action_loss,
-                       })
+
+            data_plot = {"update": j,
+                         "timesteps": total_num_steps,
+                         "discounted_r": np.mean(episode_rewards),
+                           "median": np.median(episode_rewards),
+                           "min": np.min(episode_rewards),
+                           "max":np.max(episode_rewards),
+                           "dist_entropy": dist_entropy,
+                           "value_loss": value_loss,
+                           "action_loss": action_loss,
+                           }
+
+            log_writer.writerow(data_plot)
+
+            if use_wandb:
+                wandb.log(data_plot)
 
             print(
                 "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}\n"
@@ -225,6 +282,7 @@ def main():
             ob_rms = utils.get_vec_normalize(envs).ob_rms
             evaluate(actor_critic, ob_rms, args.env_name, args.seed,
                      args.num_processes, eval_log_dir, device)
+
 
 
 if __name__ == "__main__":

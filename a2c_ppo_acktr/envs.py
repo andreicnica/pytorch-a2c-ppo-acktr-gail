@@ -29,9 +29,81 @@ except ImportError:
     pass
 
 
+class ConstantReward(gym.core.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.env._reward = self._reward
+        self.unwrapped._reward = self._reward
+
+    def step(self, action):
+        obs, reward, done, info = super().step(action)
+        if done:
+            env = self.unwrapped
+            dis_r = (1 - 0.9 * (env.step_count / env.max_steps)) * (env.step_count != env.max_steps)
+            if info is None:
+                info = dict({"discounted_r": dis_r})
+            else:
+                info["discounted_r"] = dis_r
+            info["goal_pos"] = env._crt_goal_pos
+        return obs, reward, done, info
+
+    def _reward(self):
+        return 1
+
+
+class JustMove(gym.core.Wrapper):
+    _move_actions = np.array([
+        [-1, 0],
+        [0, -1],
+        [1, 0],
+        [0, 1],
+    ])
+
+    def __init__(self, env):
+        super().__init__(env)
+
+    def step(self, action):
+        env = self.unwrapped
+        env.step_count += 1
+
+        reward = 0
+        done = False
+
+        # Move action
+        if 0 <= action < 4:
+            # Get the new possible position for the action
+            fwd_pos = self.agent_pos + self._move_actions[action]
+
+            # Get the contents of the cell in front of the agent
+            fwd_cell = env.grid.get(*fwd_pos)
+
+            if fwd_cell == None or fwd_cell.can_overlap():
+                env.agent_pos = fwd_pos
+            if fwd_cell != None and fwd_cell.type == 'goal':
+                done = True
+                reward = env._reward()
+            if fwd_cell != None and fwd_cell.type == 'lava':
+                done = True
+
+        if env.step_count >= env.max_steps:
+            done = True
+
+        obs = env.gen_obs()
+
+        info = {}
+
+        return obs, reward, done, info
+
+
 def minigrid_wrapper(env):
     from gym_minigrid.wrappers import RGBImgObsWrapper, ImgObsWrapper, FullyObsWrapper
     env.max_steps = 400
+    env.action_space.n = 6
+    observation_space = env.observation_space
+
+    action_space = env.action_space
+    env = JustMove(env)
+    env = ConstantReward(env)
     env = FullyObsWrapper(env)
     env = ImgObsWrapper(env)
     return env
@@ -243,6 +315,7 @@ class VecPyTorchFrameStack(VecEnvWrapper):
 
     def step_wait(self):
         obs, rews, news, infos = self.venv.step_wait()
+
         self.stacked_obs[:, :-self.shape_dim0] = \
             self.stacked_obs[:, self.shape_dim0:].clone()
         for (i, new) in enumerate(news):

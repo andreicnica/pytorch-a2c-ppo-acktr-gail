@@ -167,7 +167,7 @@ class NNBase(nn.Module):
 
 
 class CNNBase(NNBase):
-    def __init__(self, num_inputs, recurrent=False, hidden_size=512):
+    def __init__(self, num_inputs, recurrent=False, hidden_size=128):
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
@@ -176,24 +176,28 @@ class CNNBase(NNBase):
         print("INPUT SIZE", num_inputs)
 
         self.main = nn.Sequential(
-            init_(nn.Conv2d(num_inputs[0], 32, 3, stride=2)), nn.ReLU(),
-            init_(nn.Conv2d(32, 64, 3, stride=2)), nn.ReLU(),
-            init_(nn.Conv2d(64, 32, 3, stride=1)), nn.ReLU(), Flatten(),
+            init_(nn.Conv2d(num_inputs[0], 16, 3, stride=2)), nn.ReLU(),
+            init_(nn.Conv2d(16, 32, 3, stride=2)), nn.ReLU(),
+            init_(nn.Conv2d(32, 64, 3, stride=1)), nn.ReLU(), Flatten(),
         )
         size_ln = self.main(torch.rand(1, *num_inputs)).size(1)
         print(f"Conv out size: {size_ln}")
-        self.fc1 = nn.Sequential(init_(nn.Linear(size_ln, hidden_size)), nn.ReLU())
+        self.fc1 = nn.Sequential(init_(nn.Linear(size_ln, hidden_size)))  # , nn.ReLU())
 
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
                                constant_(x, 0))
 
-        self.critic_linear = init_(nn.Linear(hidden_size, 1))
+        self.critic_linear = nn.Sequential(
+            init_(nn.Linear(hidden_size, hidden_size)),
+            nn.ReLU(),
+            init_(nn.Linear(hidden_size, 1)),
+        )
 
         self.train()
 
     def forward(self, inputs, rnn_hxs, masks):
 
-        x = self.main(inputs / 255.0)
+        x = self.main(inputs / 10.0)
         x = self.fc1(x)
 
         if self.is_recurrent:
