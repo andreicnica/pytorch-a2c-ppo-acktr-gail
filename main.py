@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import wandb
+import csv
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
@@ -19,9 +21,33 @@ from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
 
+LOG_HEADER = {
+    "update": None,
+    "timesteps": None,
+    "median": None,
+    "discounted_r": None,
+    "min": None,
+    "max": None,
+    "dist_entropy": None,
+    "value_loss": None,
+    "action_loss": None,
+}
 
-def main():
-    args = get_args()
+
+def run(args):
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    assert args.algo in ['a2c', 'ppo', 'acktr']
+    if args.recurrent_policy:
+        assert args.algo in ['a2c', 'ppo'], \
+            'Recurrent policy is not implemented for ACKTR'
+
+    use_wandb = args.use_wandb
+
+    if use_wandb:
+        experiment_name = f"{args.full_title}_{args.run_id}"
+
+        wandb.init(project="fork-a2c-ppo", name=experiment_name)
+        wandb.config.update(args)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -30,10 +56,14 @@ def main():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
-    log_dir = os.path.expanduser(args.log_dir)
+    log_dir = args.out_dir
     eval_log_dir = log_dir + "_eval"
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
+
+    flog = open(log_dir + "/logs.csv", 'w')
+    log_writer = csv.DictWriter(flog, LOG_HEADER.keys())
+    log_writer.writeheader()
 
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
@@ -46,6 +76,9 @@ def main():
         envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
+
+    print("Neural Network:")
+    print(actor_critic)
 
     if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
@@ -187,6 +220,22 @@ def main():
                         np.max(episode_rewards), dist_entropy, value_loss,
                         action_loss))
 
+            data_plot = {"update": j,
+                         "timesteps": total_num_steps,
+                         "reward": np.mean(episode_rewards),
+                           "median": np.median(episode_rewards),
+                           "min": np.min(episode_rewards),
+                           "max":np.max(episode_rewards),
+                           "dist_entropy": dist_entropy,
+                           "value_loss": value_loss,
+                           "action_loss": action_loss,
+                           }
+
+            log_writer.writerow(data_plot)
+
+            if use_wandb:
+                wandb.log(data_plot)
+
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
             ob_rms = utils.get_vec_normalize(envs).ob_rms
@@ -195,4 +244,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    from liftoff import parse_opts
+    run(parse_opts())
