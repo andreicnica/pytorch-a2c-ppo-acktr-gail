@@ -25,7 +25,7 @@ LOG_HEADER = {
     "update": None,
     "timesteps": None,
     "median": None,
-    "discounted_r": None,
+    "reward": None,
     "min": None,
     "max": None,
     "dist_entropy": None,
