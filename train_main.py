@@ -50,6 +50,10 @@ def run(args):
         wandb.init(project="fork-a2c-ppo", name=experiment_name)
         wandb.config.update(args)
 
+    if args.seed == 0:
+        args.seed = args.run_id + 1
+
+    print(f"SEED: {args.seed}")
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
