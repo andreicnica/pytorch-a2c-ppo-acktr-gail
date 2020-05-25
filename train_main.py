@@ -1,21 +1,16 @@
-import copy
-import glob
-import os
 import time
 from collections import deque
 
-import gym
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 import wandb
 import csv
+import os
+from liftoff import OptionParser, dict_to_namespace
+import yaml
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
-from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
@@ -34,6 +29,37 @@ LOG_HEADER = {
     "value_loss": None,
     "action_loss": None,
 }
+
+
+def parse_opts(check_out_dir: bool = True):
+    """ This should be called by all scripts prepared by liftoff.
+
+        python script.py results/something/cfg.yaml
+
+        in your script.py
+
+          if __name__ == "__main__":
+              from liftoff import parse_opts()
+              main(parse_opts())
+    """
+
+    opt_parser = OptionParser("liftoff", ["config_path", "session_id"])
+    opts = opt_parser.parse_args()
+    config_path = opts.config_path
+    with open(opts.config_path) as handler:
+        config_data = yaml.load(handler, Loader=yaml.SafeLoader)
+    opts = dict_to_namespace(config_data)
+
+    if not hasattr(opts, "out_dir"):
+        opts.out_dir = f"results/experiment_{os.path.dirname(config_path)}"
+        opts.run_id = 1
+    if check_out_dir and not os.path.isdir(opts.out_dir):  # pylint: disable=no-member
+        os.mkdir(opts.out_dir)
+        print(f"New out_dir created: {opts.out_dir}")
+    else:
+        print(f"Existing out_dir: {opts.out_dir}")
+
+    return opts
 
 
 def run(args):
@@ -254,5 +280,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    from liftoff import parse_opts
     run(parse_opts())
