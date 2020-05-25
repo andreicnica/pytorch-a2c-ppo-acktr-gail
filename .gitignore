@@ -1,3 +1,10 @@
+logs/
+time_limit_logs/
+trained_models/
+wandb/
+.idea/
+results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
