@@ -17,10 +17,11 @@ from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
 from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
-from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
 
+from models.model import Policy
+from models import get_model
 
 LOG_HEADER = {
     "update": None,
@@ -38,7 +39,7 @@ LOG_HEADER = {
 def run(args):
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     assert args.algo in ['a2c', 'ppo', 'acktr']
-    if args.recurrent_policy:
+    if args.model.recurrent:
         assert args.algo in ['a2c', 'ppo'], \
             'Recurrent policy is not implemented for ACKTR'
 
@@ -76,10 +77,13 @@ def run(args):
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, log_dir, device, False)
 
+    base_model = get_model(args.model, envs.observation_space.shape, envs.action_space)
+
     actor_critic = Policy(
         envs.observation_space.shape,
         envs.action_space,
-        base_kwargs={'recurrent': args.recurrent_policy})
+        base_model,
+        base_kwargs=args.model)
     actor_critic.to(device)
 
     print("Neural Network:")
