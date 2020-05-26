@@ -8,6 +8,7 @@ import csv
 import os
 from liftoff import OptionParser, dict_to_namespace
 import yaml
+from argparse import Namespace
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
@@ -29,6 +30,17 @@ LOG_HEADER = {
     "value_loss": None,
     "action_loss": None,
 }
+
+
+def flatten_cfg(cfg: Namespace):
+    lst = []
+    for key, value in cfg.__dict__.items():
+        if isinstance(value, Namespace):
+            for key2, value2 in flatten_cfg(value):
+                lst.append((f"{key}.{key2}", value2))
+        else:
+            lst.append((key, value))
+    return lst
 
 
 def parse_opts(check_out_dir: bool = True):
@@ -75,7 +87,7 @@ def run(args):
         experiment_name = f"{args.full_title}_{args.run_id}"
 
         wandb.init(project="fork-a2c-ppo", name=experiment_name)
-        wandb.config.update(args)
+        wandb.config.update(dict(flatten_cfg(args)))
 
     if args.seed == 0:
         args.seed = args.run_id + 1
