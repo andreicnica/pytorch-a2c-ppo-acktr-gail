@@ -1,4 +1,5 @@
 from models.model import CNNBase, MLPBase
+from models.resnetish import Resnetish
 
 import torch
 from argparse import Namespace
@@ -7,6 +8,7 @@ import gym
 MODELS = {
     "CNNBase": CNNBase,
     "MLPBase": MLPBase,
+    "Resnetish": Resnetish,
 }
 
 
