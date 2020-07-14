@@ -293,6 +293,10 @@ def run(args):
             ob_rms = getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             eval_info = evaluate(actor_critic, ob_rms, args.env_name, args.seed,
                                  args.num_processes, eval_log_dir, device, eps=eval_eps)
+            eval_info_mode = evaluate(actor_critic, ob_rms, args.env_name, args.seed,
+                                      args.num_processes, eval_log_dir, device, eps=0.)
+            for k, v in eval_info_mode.items():
+                eval_info[f"{k}_MODE"] = v
 
             if use_wandb:
                 wandb.log(eval_info, step=total_num_steps)
