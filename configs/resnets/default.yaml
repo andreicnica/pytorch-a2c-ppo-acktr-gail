@@ -4,7 +4,8 @@ log_interval: 1
 env_name: 'PongNoFrameskip-v4'
 save_dir: './trained_models/'
 save_interval: 10000
-eval_interval:
+eval_interval: 10
+eval_eps: 0.2
 num_env_steps: 3.0e+6
 no_cuda: False
 offset: 0
@@ -34,7 +35,7 @@ clip_param: 0.1
 use_proper_time_limits: False
 
 model:
-  name: Resnetish
+  name: CNNBase
   recurrent: False
   hidden_size: 512
   avg_pool_size: 2

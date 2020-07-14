@@ -42,7 +42,7 @@ class Policy(nn.Module):
     def forward(self, inputs, rnn_hxs, masks):
         raise NotImplementedError
 
-    def act(self, inputs, rnn_hxs, masks, deterministic=False):
+    def act(self, inputs, rnn_hxs, masks, deterministic=False, eps=0.):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
         dist = self.dist(actor_features)
 
@@ -50,6 +50,12 @@ class Policy(nn.Module):
             action = dist.mode()
         else:
             action = dist.sample()
+
+        if eps > 0:
+            rand_act = torch.rand(dist.probs.size(0), 1) < eps
+            action[rand_act] = torch.randint(0, dist.probs.size(1), (rand_act.sum(),),
+                                             device=action.device)
+            print(rand_act.sum())
 
         action_log_probs = dist.log_probs(action)
         dist_entropy = dist.entropy().mean()

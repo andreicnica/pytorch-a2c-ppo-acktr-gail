@@ -82,9 +82,13 @@ def run(args):
             'Recurrent policy is not implemented for ACKTR'
 
     use_wandb = args.use_wandb
+    eval_eps = args.eval_eps
 
     if use_wandb:
         experiment_name = f"{args.full_title}_{args.run_id}"
+        from wandb_key import WANDB_API_KEY
+
+        os.environ['WANDB_API_KEY'] = WANDB_API_KEY
 
         wandb.init(project="fork-a2c-ppo", name=experiment_name)
         wandb.config.update(dict(flatten_cfg(args)))
@@ -282,13 +286,16 @@ def run(args):
             log_writer.writerow(data_plot)
 
             if use_wandb:
-                wandb.log(data_plot)
+                wandb.log(data_plot, step=total_num_steps)
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
-            ob_rms = utils.get_vec_normalize(envs).ob_rms
-            evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                     args.num_processes, eval_log_dir, device)
+            ob_rms = getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
+            eval_info = evaluate(actor_critic, ob_rms, args.env_name, args.seed,
+                                 args.num_processes, eval_log_dir, device, eps=eval_eps)
+
+            if use_wandb:
+                wandb.log(eval_info, step=total_num_steps)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from a2c_ppo_acktr.envs import make_vec_envs
 
 
 def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
-             device):
+             device, eps=0.0):
     eval_envs = make_vec_envs(env_name, seed + num_processes, num_processes,
                               None, eval_log_dir, device, True)
 
@@ -28,7 +28,7 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
                 obs,
                 eval_recurrent_hidden_states,
                 eval_masks,
-                deterministic=True)
+                deterministic=True, eps=eps)
 
         # Obser reward and next obs
         obs, _, done, infos = eval_envs.step(action)
@@ -46,3 +46,8 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
 
     print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
         len(eval_episode_rewards), np.mean(eval_episode_rewards)))
+
+    return {
+        "eval_ep_cnt": len(eval_episode_rewards),
+        "eval_reward": np.mean(eval_episode_rewards)
+    }
