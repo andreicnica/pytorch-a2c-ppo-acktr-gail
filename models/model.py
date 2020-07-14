@@ -55,7 +55,6 @@ class Policy(nn.Module):
             rand_act = torch.rand(dist.probs.size(0), 1) < eps
             action[rand_act] = torch.randint(0, dist.probs.size(1), (rand_act.sum(),),
                                              device=action.device)
-            print(rand_act.sum())
 
         action_log_probs = dist.log_probs(action)
         dist_entropy = dist.entropy().mean()

@@ -170,3 +170,26 @@ python enjoy.py --load-dir trained_models/ppo --env-name "Reacher-v2"
 ![QbertNoFrameskip-v4](imgs/acktr_qbert.png)
 
 ![beamriderNoFrameskip-v4](imgs/acktr_beamrider.png)
+
+
+```
+module load anaconda/3 cuda/10.1 cuda/10.1/cudnn/7.6 python/3.7/cuda/10.1/cudnn/7.6/pytorch/1.5.0
+
+conda create --name andreic python=3.7
+
+pip install wandb
+
+git clone https://github.com/tudor-berariu/liftoff.git
+cd liftoff
+pip3 install -e .
+
+
+
+module load anaconda/3 cuda/10.1 cuda/10.1/cudnn/7.6 python/3.7/cuda/10.1/cudnn/7.6/pytorch/1.5.0
+source $CONDA_ACTIVATE
+conda-activate
+source activate andreic
+conda deactivate
+source activate andreic
+
+```
