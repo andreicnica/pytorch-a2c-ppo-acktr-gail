@@ -4,7 +4,7 @@ import torch.nn as nn
 from torchvision.models.resnet import Bottleneck, conv1x1, conv3x3, model_urls
 from torchvision.models.utils import load_state_dict_from_url
 
-from models.model import NNBase, init
+from models.model import NNBase, init, init_null
 
 
 class Resnetish(NNBase):
@@ -12,6 +12,7 @@ class Resnetish(NNBase):
         num_inputs = obs_space[0]
         recurrent = cfg.recurrent
         hidden_size = cfg.hidden_size
+        use_init = cfg.use_init
 
         k_sizes = getattr(cfg, "k_sizes", [8])
         s_sizes = getattr(cfg, "s_sizes", [4])
@@ -53,8 +54,12 @@ class Resnetish(NNBase):
         self.fc = nn.Sequential(nn.Linear(out_feat_size, hidden_size), nn.ReLU())
         del rnet
 
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0))
+        if use_init:
+            init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                                   constant_(x, 0))
+        else:
+            init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                                   constant_(x, 0))
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 

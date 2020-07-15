@@ -42,6 +42,7 @@ model:
   inplanes: 64
   num_blocks: 2
   use_bn: true
+  use_init: False
 
 
 gail: False

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian
-from a2c_ppo_acktr.utils import init
+from a2c_ppo_acktr.utils import init, init_null
 
 
 class Flatten(nn.Module):
@@ -167,11 +167,16 @@ class CNNBase(NNBase):
         num_inputs = obs_space[0]
         recurrent = cfg.recurrent
         hidden_size = cfg.hidden_size
+        use_init = cfg.use_init
 
         super(CNNBase, self).__init__(recurrent, hidden_size, hidden_size)
 
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0), nn.init.calculate_gain('relu'))
+        if use_init:
+            init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                                   constant_(x, 0), nn.init.calculate_gain('relu'))
+        else:
+            init_ = lambda m: init_null(m, nn.init.orthogonal_, lambda x: nn.init.
+                                   constant_(x, 0), nn.init.calculate_gain('relu'))
 
         self.main = nn.Sequential(
             init_(nn.Conv2d(num_inputs, 32, 8, stride=4)), nn.ReLU(),
@@ -179,8 +184,12 @@ class CNNBase(NNBase):
             init_(nn.Conv2d(64, 32, 3, stride=1)), nn.ReLU(), Flatten(),
             init_(nn.Linear(32 * 7 * 7, hidden_size)), nn.ReLU())
 
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0))
+        if use_init:
+            init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                                   constant_(x, 0))
+        else:
+            init_ = lambda m: init_null(m, nn.init.orthogonal_, lambda x: nn.init.
+                                        constant_(x, 0))
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
