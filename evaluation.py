@@ -28,7 +28,7 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
                 obs,
                 eval_recurrent_hidden_states,
                 eval_masks,
-                deterministic=True, eps=eps)
+                deterministic=False, eps=eps)
 
         # Obser reward and next obs
         obs, _, done, infos = eval_envs.step(action)
