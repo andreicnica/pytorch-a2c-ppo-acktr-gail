@@ -119,10 +119,6 @@ def run(args):
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, log_dir, device, False)
 
-    if args.eval_interval is not None:
-        eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes, args.num_processes,
-                                  args.gamma, eval_log_dir, device, True)
-
     base_model = get_model(args.model, envs.observation_space.shape, envs.action_space)
 
     actor_critic = Policy(
@@ -301,10 +297,23 @@ def run(args):
             determinitistic = args.eval_determinitistic
 
             # Evaluate for
+            eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes,
+                                      args.num_processes,
+                                      args.gamma, eval_log_dir, device, True)
+
             eval_info = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
                                           device, deterministic=determinitistic, eps=eval_eps)
+            eval_envs.close()
+
+            # Evaluate for
+
+            eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes,
+                                      args.num_processes,
+                                      args.gamma, eval_log_dir, device, True)
+
             eval_info_mode = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
                                           device, deterministic=determinitistic, eps=0.)
+            eval_envs.close()
 
             eval_inf = dict()
 
