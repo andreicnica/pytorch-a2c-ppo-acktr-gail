@@ -6,7 +6,7 @@ save_dir: './trained_models/'
 save_interval: 10000
 eval_interval: 50
 eval_determinitistic: False
-eval_eps: 0.2
+eval_eps: 0.1
 num_env_steps: 3.0e+6
 no_cuda: False
 offset: 0
