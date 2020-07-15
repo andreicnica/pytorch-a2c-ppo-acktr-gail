@@ -56,6 +56,10 @@ def init(module, weight_init, bias_init, gain=1):
     return module
 
 
+def init_null(module, weight_init, bias_init, gain=1):
+    return module
+
+
 def cleanup_log_dir(log_dir):
     try:
         os.makedirs(log_dir)
