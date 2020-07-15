@@ -15,7 +15,7 @@ class Resnetish(NNBase):
         use_init = cfg.use_init
 
         k_sizes = getattr(cfg, "k_sizes", [8])
-        s_sizes = getattr(cfg, "s_sizes", [4])
+        s_sizes = getattr(cfg, "s_sizes", [1])
 
         avg_pool_size = getattr(cfg, "avg_pool_size", 2)
         inplanes = getattr(cfg, "inplanes", 64)
@@ -39,7 +39,7 @@ class Resnetish(NNBase):
         bn1 = rnet._norm_layer(inplanes)
         relu = nn.ReLU(inplace=True)
 
-        blocks = [conv1, bn1, relu]
+        blocks = [conv1, bn1, relu, nn.AvgPool2d((2, 2))]
         blocks += [rnet.layer1, rnet.layer2, rnet.layer3, rnet.layer4][:num_blocks]
         blocks += [nn.AdaptiveAvgPool2d((avg_pool_size, avg_pool_size))]
         blocks += [

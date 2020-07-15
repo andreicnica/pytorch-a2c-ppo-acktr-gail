@@ -10,7 +10,7 @@ eval_eps: 0.1
 num_env_steps: 3.0e+6
 no_cuda: False
 offset: 0
-use_wandb: true
+use_wandb: True
 name: ""
 cuda_deterministic: False
 
@@ -39,9 +39,9 @@ model:
   name: Resnetish
   recurrent: False
   hidden_size: 512
-  avg_pool_size: 2
+  avg_pool_size: 4
   inplanes: 64
-  num_blocks: 2
+  num_blocks: 3
   use_bn: true
   use_init: True
 

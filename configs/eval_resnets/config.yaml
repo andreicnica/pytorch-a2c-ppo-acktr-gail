@@ -1,6 +1,6 @@
 model:
-  avg_pool_size: [3, 5]
-  inplanes: [32, 64, 128]
+  avg_pool_size: [3, 5, 8]
+  inplanes: [32, 64]
   num_blocks: [2, 3]
   use_bn: [true, false]
   name: [Resnetish]
