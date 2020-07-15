@@ -9,8 +9,8 @@
 
 # 1. Load your environment
 source /etc/profile
-module load tensorflow
 module load anaconda/3 python/3.7/cuda/10.1/cudnn/7.6/pytorch/1.5.0
+module load tensorflow
 #source $CONDA_ACTIVATE
 conda-activate
 source activate andreic
