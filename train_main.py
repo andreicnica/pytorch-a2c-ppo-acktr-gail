@@ -14,7 +14,7 @@ from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.storage import RolloutStorage
-from evaluation import evaluate
+from evaluation import evaluate_same_env
 
 from models.model import Policy
 from models import get_model
@@ -90,7 +90,7 @@ def run(args):
 
         os.environ['WANDB_API_KEY'] = WANDB_API_KEY
 
-        wandb.init(project="fork-a2c-ppo", name=experiment_name)
+        wandb.init(project="atari_ppo", name=experiment_name)
         wandb.config.update(dict(flatten_cfg(args)))
 
     if args.seed == 0:
@@ -118,6 +118,10 @@ def run(args):
 
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, log_dir, device, False)
+
+    if args.eval_interval is not None:
+        eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes, args.num_processes,
+                                  args.gamma, eval_log_dir, device, True)
 
     base_model = get_model(args.model, envs.observation_space.shape, envs.action_space)
 
@@ -290,16 +294,28 @@ def run(args):
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
+            total_num_steps = (j + 1) * args.num_processes * args.num_steps
+
             ob_rms = getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
-            eval_info = evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                                 args.num_processes, eval_log_dir, device, eps=eval_eps)
-            eval_info_mode = evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                                      args.num_processes, eval_log_dir, device, eps=0.)
+
+            determinitistic = args.eval_determinitistic
+
+            # Evaluate for
+            eval_info = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
+                                          device, deterministic=determinitistic, eps=eval_eps)
+            eval_info_mode = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
+                                          device, deterministic=determinitistic, eps=0.)
+
+            eval_inf = dict()
+
+            for k, v in eval_info.items():
+                eval_inf[f"{k}_test"] = v
+
             for k, v in eval_info_mode.items():
-                eval_info[f"{k}_MODE"] = v
+                eval_inf[f"{k}_training"] = v
 
             if use_wandb:
-                wandb.log(eval_info, step=total_num_steps)
+                wandb.log(eval_inf, step=total_num_steps)
 
 
 if __name__ == "__main__":
