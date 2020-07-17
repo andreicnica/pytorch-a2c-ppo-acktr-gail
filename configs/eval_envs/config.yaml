@@ -1,2 +1,20 @@
+env_name: ["PongNoFrameskip-v4",
+           "FrostbiteNoFrameskip-v4",
+           "BreakoutNoFrameskip-v4",
+           "KungFuMasterNoFrameskip-v4",
+           "QbertNoFrameskip-v4",
+           "SpaceInvadersNoFrameskip-v4",
+           "AlienNoFrameskip-v4",
+           "KrullNoFrameskip-v4"]
+
+repeat_eval_eps: [1, 10]
+
 model:
-  name: [CNNBase]
+  - name: CNNBase
+  - name: Resnetish
+    avg_pool_size: 5
+    inplanes: 32
+    num_blocks: 3
+    use_bn: false
+
+

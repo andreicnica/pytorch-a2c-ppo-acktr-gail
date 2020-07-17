@@ -7,6 +7,7 @@ save_interval: 10000
 eval_interval: 1
 eval_episodes: 32
 eval_eps: 0.05
+repeat_eval_eps: 1
 eval_determinitistic: False
 
 num_env_steps: 10.0e+6
