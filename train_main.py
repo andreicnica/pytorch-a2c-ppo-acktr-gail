@@ -107,7 +107,6 @@ def run(args):
     log_dir = args.out_dir
 
     os.environ['OPENAI_LOGDIR'] = args.out_dir
-    os.environ['OPENAI_LOG_FORMAT'] = 'stdout,tensorboard'
 
     eval_log_dir = log_dir + "_eval"
     utils.cleanup_log_dir(log_dir)
