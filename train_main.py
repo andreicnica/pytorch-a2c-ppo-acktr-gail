@@ -107,7 +107,6 @@ def run(args):
     log_dir = args.out_dir
 
     os.environ['OPENAI_LOGDIR'] = args.out_dir
-#    os.environ['OPENAI_LOG_FORMAT'] = 'stdout,tensorboard'
 
     eval_log_dir = log_dir + "_eval"
     utils.cleanup_log_dir(log_dir)
@@ -192,6 +191,7 @@ def run(args):
         args.num_env_steps) // args.num_steps // args.num_processes
 
     eval_episodes = args.eval_episodes
+    repeat_eval_eps = getattr(args, "repeat_eval_eps", 1)
     eval_env_max_steps = 6000 * (eval_episodes // args.num_processes + 1)
 
     for j in range(num_updates):
@@ -311,7 +311,8 @@ def run(args):
 
             eval_info = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
                                           device, deterministic=determinitistic, eps=eval_eps,
-                                          eval_ep=eval_episodes, max_steps=eval_env_max_steps)
+                                          eval_ep=eval_episodes, max_steps=eval_env_max_steps,
+                                          repeat_eps=repeat_eval_eps)
             eval_envs.close()
 
             # Evaluate for
@@ -321,7 +322,8 @@ def run(args):
 
             eval_info_mode = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
                                                device, deterministic=determinitistic, eps=0.,
-                                               eval_ep=eval_episodes, max_steps=eval_env_max_steps)
+                                               eval_ep=eval_episodes, max_steps=eval_env_max_steps,
+                                               repeat_eps=1)
 
             eval_envs.close()
 
