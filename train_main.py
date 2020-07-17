@@ -105,6 +105,10 @@ def run(args):
         torch.backends.cudnn.deterministic = True
 
     log_dir = args.out_dir
+
+    os.environ['OPENAI_LOGDIR'] = args.out_dir
+    os.environ['OPENAI_LOG_FORMAT'] = 'stdout,tensorboard'
+
     eval_log_dir = log_dir + "_eval"
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
