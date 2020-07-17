@@ -54,7 +54,7 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
 
 
 def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, eps=0.0,
-                      deterministic=False, eval_ep=10):
+                      deterministic=False, eval_ep=10, max_steps=0):
 
     vec_norm = utils.get_vec_normalize(eval_envs)
     if vec_norm is not None:
@@ -68,7 +68,11 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
         num_processes, actor_critic.recurrent_hidden_state_size, device=device)
     eval_masks = torch.zeros(num_processes, 1, device=device)
 
-    while len(eval_episode_rewards) < eval_ep:
+    step = 0
+    if max_steps is None or max_steps <= 0:
+        max_steps = np.inf
+
+    while len(eval_episode_rewards) < eval_ep and step < max_steps:
         with torch.no_grad():
             _, action, _, eval_recurrent_hidden_states = actor_critic.act(
                 obs,
@@ -87,9 +91,13 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
         for info in infos:
             if 'episode' in info.keys():
                 eval_episode_rewards.append(info['episode']['r'])
+        step += 1
 
     print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
         len(eval_episode_rewards), np.mean(eval_episode_rewards)))
+
+    if len(eval_episode_rewards) < eval_ep:
+        return None
 
     return {
         "eval_ep_cnt": len(eval_episode_rewards),

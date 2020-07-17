@@ -186,6 +186,10 @@ def run(args):
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
+
+    eval_episodes = args.eval_episodes
+    eval_env_max_steps = 6000 * (eval_episodes // args.num_processes + 1)
+
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -302,28 +306,31 @@ def run(args):
                                       args.gamma, eval_log_dir, device, True)
 
             eval_info = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
-                                          device, deterministic=determinitistic, eps=eval_eps)
+                                          device, deterministic=determinitistic, eps=eval_eps,
+                                          eval_ep=eval_episodes, max_steps=eval_env_max_steps)
             eval_envs.close()
 
             # Evaluate for
-
             eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes,
                                       args.num_processes,
                                       args.gamma, eval_log_dir, device, True)
 
             eval_info_mode = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
-                                          device, deterministic=determinitistic, eps=0.)
+                                               device, deterministic=determinitistic, eps=0.,
+                                               eval_ep=eval_episodes, max_steps=eval_env_max_steps)
+
             eval_envs.close()
 
             eval_inf = dict()
 
-            for k, v in eval_info.items():
-                eval_inf[f"{k}_test"] = v
+            if eval_info is not None and eval_info_mode is not None:
+                for k, v in eval_info.items():
+                    eval_inf[f"{k}_test"] = v
 
-            for k, v in eval_info_mode.items():
-                eval_inf[f"{k}_training"] = v
+                for k, v in eval_info_mode.items():
+                    eval_inf[f"{k}_training"] = v
 
-            if use_wandb:
+            if use_wandb and len(eval_inf) > 0:
                 wandb.log(eval_inf, step=total_num_steps)
 
 
