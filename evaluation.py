@@ -54,7 +54,7 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
 
 
 def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, eps=0.0,
-                      deterministic=False, eval_ep=10, max_steps=0):
+                      deterministic=False, eval_ep=10, max_steps=0, repeat_eps=1):
 
     vec_norm = utils.get_vec_normalize(eval_envs)
     if vec_norm is not None:
@@ -72,13 +72,37 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
     if max_steps is None or max_steps <= 0:
         max_steps = np.inf
 
+    if repeat_eps > 1:
+        eps = eps / float(repeat_eps)
+        rand_act = (torch.rand(num_processes, 1) < eps)
+        rand_act_cnt = torch.zeros_like(rand_act).float()
+
     while len(eval_episode_rewards) < eval_ep and step < max_steps:
         with torch.no_grad():
-            _, action, _, eval_recurrent_hidden_states = actor_critic.act(
-                obs,
-                eval_recurrent_hidden_states,
-                eval_masks,
-                deterministic=deterministic, eps=eps)
+            if repeat_eps > 1:
+                _, action, _, eval_recurrent_hidden_states = actor_critic.act(
+                    obs,
+                    eval_recurrent_hidden_states,
+                    eval_masks,
+                    deterministic=deterministic, eps=eps, rand_action_mask=rand_act)
+                rand_act_cnt = (rand_act_cnt + 1) * rand_act
+                new_rand_act = rand_act_cnt > repeat_eps
+
+                cnt_new = new_rand_act.sum()
+                if cnt_new > 0:
+                    rand_act[new_rand_act] = False
+                    new_rand_act[new_rand_act] = 0
+
+                available = ~rand_act
+                av_cnt = available.sum()
+                if av_cnt > 0:
+                    rand_act[available] = (torch.rand(av_cnt) < eps)
+            else:
+                _, action, _, eval_recurrent_hidden_states = actor_critic.act(
+                    obs,
+                    eval_recurrent_hidden_states,
+                    eval_masks,
+                    deterministic=deterministic, eps=eps)
 
         # Obser reward and next obs
         obs, _, done, infos = eval_envs.step(action)
