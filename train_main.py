@@ -334,6 +334,8 @@ def run(args):
                 for k, v in eval_info_mode.items():
                     eval_inf[f"{k}_training"] = v
 
+                eval_inf["eval_gap"] = eval_info_mode["eval_reward"] - eval_info["eval_reward"]
+
             if use_wandb and len(eval_inf) > 0:
                 wandb.log(eval_inf, step=total_num_steps)
 
