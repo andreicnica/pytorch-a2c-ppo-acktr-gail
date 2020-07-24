@@ -53,8 +53,9 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
     }
 
 
-def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, eps=0.0,
-                      deterministic=False, eval_ep=10, max_steps=0, repeat_eps=1):
+def evaluate_same_env(actor_critic, ob_rms, num_processes, device, eval_envs=None, eps=0.0,
+                      deterministic=False, eval_ep=10, max_steps=0, repeat_eps=1,
+                      use_rand_actions=False):
 
     vec_norm = utils.get_vec_normalize(eval_envs)
     if vec_norm is not None:
@@ -76,6 +77,7 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
         eps = eps / float(repeat_eps)
         rand_act = (torch.rand(num_processes, 1) < eps)
         rand_act_cnt = torch.zeros_like(rand_act).float()
+    rand_actions = None
 
     while len(eval_episode_rewards) < eval_ep and step < max_steps:
         with torch.no_grad():
@@ -84,7 +86,9 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
                     obs,
                     eval_recurrent_hidden_states,
                     eval_masks,
-                    deterministic=deterministic, eps=eps, rand_action_mask=rand_act)
+                    deterministic=deterministic, eps=eps, rand_action_mask=rand_act,
+                    rand_actions=rand_actions
+                )
                 rand_act_cnt = (rand_act_cnt + 1) * rand_act
                 new_rand_act = rand_act_cnt > repeat_eps
 
@@ -97,6 +101,11 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
                 av_cnt = available.sum()
                 if av_cnt > 0:
                     rand_act[available] = (torch.rand(av_cnt) < eps)
+
+                if not use_rand_actions and rand_act.sum() > 0:
+                    rand_actions = action[rand_act]
+                else:
+                    rand_actions = None
             else:
                 _, action, _, eval_recurrent_hidden_states = actor_critic.act(
                     obs,
@@ -124,6 +133,6 @@ def evaluate_same_env(actor_critic, eval_envs, ob_rms, num_processes, device, ep
         return None
 
     return {
-        "eval_ep_cnt": len(eval_episode_rewards),
+        # "eval_ep_cnt": len(eval_episode_rewards),
         "eval_reward": np.mean(eval_episode_rewards)
     }

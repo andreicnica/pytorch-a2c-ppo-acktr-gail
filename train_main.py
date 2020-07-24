@@ -304,39 +304,46 @@ def run(args):
 
             determinitistic = args.eval_determinitistic
 
-            # Evaluate for
-            eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes,
-                                      args.num_processes,
-                                      args.gamma, eval_log_dir, device, True)
+            make_env_args = (args.env_name, args.seed + args.num_processes, args.num_processes,
+                             args.gamma, eval_log_dir, device, True)
 
-            eval_info = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
-                                          device, deterministic=determinitistic, eps=eval_eps,
-                                          eval_ep=eval_episodes, max_steps=eval_env_max_steps,
-                                          repeat_eps=repeat_eval_eps)
-            eval_envs.close()
-
-            # Evaluate for
-            eval_envs = make_vec_envs(args.env_name, args.seed + args.num_processes,
-                                      args.num_processes,
-                                      args.gamma, eval_log_dir, device, True)
-
-            eval_info_mode = evaluate_same_env(actor_critic, eval_envs, ob_rms, args.num_processes,
-                                               device, deterministic=determinitistic, eps=0.,
-                                               eval_ep=eval_episodes, max_steps=eval_env_max_steps,
-                                               repeat_eps=1)
-
-            eval_envs.close()
+            eval_args = (actor_critic, ob_rms, args.num_processes, device)
+            eval_kwargs = dict({
+                "deterministic": determinitistic,
+                "eval_ep": eval_episodes,
+                "max_steps": eval_env_max_steps,
+                "eval_envs": None,
+            })
+            # --------------------------------------------------------------------------------------
+            # Evaluate simple 1 step eps greedy
 
             eval_inf = dict()
+            base_score = None
 
-            if eval_info is not None and eval_info_mode is not None:
-                for k, v in eval_info.items():
-                    eval_inf[f"{k}_test"] = v
+            evaluations = [
+                ("train", dict({"eps": 0., "repeat_eps": 1, "use_rand_actions": True})),
+                ("eps", dict({"eps": eval_eps, "repeat_eps": 1, "use_rand_actions": True})),
+                ("eps_rp_10", dict({"eps": eval_eps, "repeat_eps": 10, "use_rand_actions": True})),
+                ("eps_rp_10_la", dict({"eps": eval_eps, "repeat_eps": 10, "use_rand_actions": False})),
+                ("eps10_rp_20", dict({"eps": eval_eps*2, "repeat_eps": 20, "use_rand_actions": True})),
+            ]
 
-                for k, v in eval_info_mode.items():
-                    eval_inf[f"{k}_training"] = v
+            for eval_name, eval_custom_args in evaluations:
+                eval_envs = make_vec_envs(*make_env_args)
+                eval_kwargs["eval_envs"] = eval_envs
+                eval_info = evaluate_same_env(*eval_args, **eval_kwargs, **eval_custom_args)
+                eval_envs.close()
 
-                eval_inf["eval_gap"] = eval_info_mode["eval_reward"] - eval_info["eval_reward"]
+                if eval_info is not None:
+                    for k, v in eval_info.items():
+                        eval_inf[f"{eval_name}_{k}"] = v
+
+                if eval_name == "train":
+                    base_score = eval_info["eval_reward"]
+                else:
+                    eval_inf[f"{eval_name}_gap"] = base_score - eval_info["eval_reward"]
+
+            # --------------------------------------------------------------------------------------
 
             if use_wandb and len(eval_inf) > 0:
                 wandb.log(eval_inf, step=total_num_steps)
