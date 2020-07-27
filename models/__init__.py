@@ -1,5 +1,6 @@
 from models.model import CNNBase, MLPBase
 from models.resnetish import Resnetish
+from models.dreamer import DreamerNet
 
 import torch
 from argparse import Namespace
@@ -9,6 +10,7 @@ MODELS = {
     "CNNBase": CNNBase,
     "MLPBase": MLPBase,
     "Resnetish": Resnetish,
+    "Dreamer": DreamerNet,
 }
 
 
