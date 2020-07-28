@@ -1,6 +1,7 @@
 import subprocess
 import glob
 import re
+import os
 
 
 if __name__ == "__main__":
@@ -40,8 +41,9 @@ if __name__ == "__main__":
 
         out_content = None
 
-        with open(exp_file, "r") as f:
-            out_content = f.readlines()
+        if os.path.isfile(exp_file):
+            with open(exp_file, "r") as f:
+                out_content = f.readlines()
 
         if out_content is not None:
             last_line = out_content[-1]
