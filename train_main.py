@@ -318,7 +318,7 @@ def run(args):
             # Evaluate simple 1 step eps greedy
 
             eval_inf = dict()
-            base_score = None
+            base_score = 0
 
             evaluations = [
                 ("train", dict({"eps": 0., "repeat_eps": 1, "use_rand_actions": True})),
@@ -339,8 +339,11 @@ def run(args):
                         eval_inf[f"{eval_name}_{k}"] = v
 
                 if eval_name == "train":
-                    base_score = eval_info["eval_reward"]
-                else:
+                    if eval_info is None:
+                        base_score = None
+                    else:
+                        base_score = eval_info["eval_reward"]
+                elif base_score is not None:
                     eval_inf[f"{eval_name}_gap"] = base_score - eval_info["eval_reward"]
 
             # --------------------------------------------------------------------------------------
