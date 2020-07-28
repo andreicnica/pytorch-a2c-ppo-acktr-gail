@@ -8,9 +8,12 @@ if __name__ == "__main__":
 
     # get running jobs
     result = subprocess.run(['squeue', '--long','-u', 'nicaandr'], stdout=subprocess.PIPE, encoding='utf8')
-    jobs = [x for x in result.stdout.readlines()]
     jobs = result.stdout.split("\n")[2:]
-    jobs_ids = [x.split()[0] for x in jobs]
+
+    jobs_ids = []
+    for x in jobs:
+        if len(x.split()) > 0:
+            jobs_ids.append(x.split()[0])
 
     # get slurm files
     slurm_log_files = glob.glob("/network/tmp1/nicaandr/slurm_logs/slurm-*")
