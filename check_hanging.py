@@ -33,6 +33,7 @@ if __name__ == "__main__":
             file_content = f.readlines()
 
         id_num = None
+        exp_file = ""
 
         for line in file_content:
             if line.startswith("Running sbatch array job"):
