@@ -67,7 +67,7 @@ if __name__ == "__main__":
             finished_jobs.append(id_num)
 
     for job_id in finished_jobs:
-        print(f"scancel {full_job_id}_{job_id}* --hurry -f")
+        print(f"scancel {full_job_id}_{job_id} --hurry -f")
 
 
 
