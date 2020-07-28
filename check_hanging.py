@@ -52,7 +52,7 @@ if __name__ == "__main__":
                 out_content = f.readlines()
 
         finished_correctly = False
-        if out_content is not None:
+        if out_content is not None and len(last_line) > 0:
             last_line = out_content[-1]
             mtch_out = re.findall(match_check, last_line)
             if len(mtch_out) > 0:
