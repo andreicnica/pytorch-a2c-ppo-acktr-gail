@@ -63,7 +63,7 @@ if __name__ == "__main__":
             print(f"NO OUT: {exp_file}")
 
         if id_num is not None and finished_correctly:
-            print(f"JOB {id_num} finished")
+            print(f"JOB {id_num} finished ({exp_file})")
             finished_jobs.append(id_num)
 
     for job_id in finished_jobs:
