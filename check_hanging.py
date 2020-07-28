@@ -6,6 +6,8 @@ import os
 
 if __name__ == "__main__":
     exp_path = "/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/results/2020Jul24-184453_eval_base_all/"
+    match_check = "timesteps ([0-9]+)"
+    match_validation = "19999744"
 
     # get running jobs
     result = subprocess.run(['squeue', '--long','-u', 'nicaandr'], stdout=subprocess.PIPE, encoding='utf8')
@@ -45,9 +47,15 @@ if __name__ == "__main__":
             with open(exp_file, "r") as f:
                 out_content = f.readlines()
 
+        finished_correctly = False
         if out_content is not None:
             last_line = out_content[-1]
-            print(last_line)
+            mtch_out = re.findall(match_check, last_line)
+            if len(mtch_out) > 0:
+                mtch_out_answ = mtch_out[0]
+                if mtch_out_answ == match_validation:
+                    print(last_line)
+                    finished_correctly = True
         else:
             print(f"NO OUT: {exp_file}")
 
