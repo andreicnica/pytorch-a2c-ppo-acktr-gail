@@ -54,11 +54,12 @@ if __name__ == "__main__":
             if len(mtch_out) > 0:
                 mtch_out_answ = mtch_out[0]
                 if mtch_out_answ == match_validation:
-                    print(last_line)
                     finished_correctly = True
         else:
             print(f"NO OUT: {exp_file}")
 
+        if id_num is not None and finished_correctly:
+            print(f"JOB {id_num} finished")
 
 
 
