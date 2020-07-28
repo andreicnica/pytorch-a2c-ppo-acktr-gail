@@ -8,6 +8,7 @@ if __name__ == "__main__":
     exp_path = "/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/results/2020Jul24-184453_eval_base_all/"
     match_check = "timesteps ([0-9]+)"
     match_validation = "19999744"
+    full_job_id = "538754"
 
     # get running jobs
     result = subprocess.run(['squeue', '--long','-u', 'nicaandr'], stdout=subprocess.PIPE, encoding='utf8')
@@ -23,6 +24,8 @@ if __name__ == "__main__":
 
     # get out files
     out_files = glob.glob(f"{exp_path}/**/**/out", recursive=True)
+
+    finished_jobs = []
 
     # Parse slurm logs to get job ID
     for slurm_log_file in slurm_log_files:
@@ -60,7 +63,10 @@ if __name__ == "__main__":
 
         if id_num is not None and finished_correctly:
             print(f"JOB {id_num} finished")
+            finished_jobs.append(id_num)
 
+    for job_id in finished_jobs:
+        print(f"scancel {full_job_id}_{job_id}* --hurry -f")
 
 
 
