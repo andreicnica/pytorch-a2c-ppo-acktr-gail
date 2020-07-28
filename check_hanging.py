@@ -35,7 +35,7 @@ if __name__ == "__main__":
                 if mmm is not None:
                     id_num = mmm[1]
 
-            elif exp_path in line:
+            elif exp_path in line and line.startswith(" date"):
                 start_file = re.findall(f"{exp_path}.*\.__start", line)[0]
                 exp_file = start_file.replace(".__start", "out")
 
