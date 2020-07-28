@@ -5,7 +5,7 @@ import os
 
 
 if __name__ == "__main__":
-    exp_path = "/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/results/2020Jul24-184453_eval_base_all/"
+    exp_path = "/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/results/2020Jul27-225533_eval_dreamer_all/"
     match_check = "timesteps ([0-9]+)"
     match_validation = "19999744"
     full_job_id = "538754"
