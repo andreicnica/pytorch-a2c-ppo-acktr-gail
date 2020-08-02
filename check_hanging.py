@@ -2,15 +2,23 @@ import subprocess
 import glob
 import re
 import os
+import argparse
 
 
 if __name__ == "__main__":
-    exp_path = "/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/results/2020Jul27-225533_eval_dreamer_all/"
+    parser = argparse.ArgumentParser(description='Check experiment jobs if they are hanging')
+    parser.add_argument('experiment', type=str,  help='Experiment to check')
+    args = parser.parse_args()
+
+    exp_name = args.experiment
+
+    exp_path = f"/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/{exp_name}/"
     match_check = "timesteps ([0-9]+)"
     match_validation = "19999744"
 
     # get running jobs
-    result = subprocess.run(['squeue', '--long','-u', 'nicaandr'], stdout=subprocess.PIPE, encoding='utf8')
+    result = subprocess.run(['squeue', '--long','-u', 'nicaandr'], stdout=subprocess.PIPE,
+                            encoding='utf8')
     jobs = result.stdout.split("\n")[2:]
 
     jobs_ids = []
