@@ -8,7 +8,6 @@ if __name__ == "__main__":
     exp_path = "/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/results/2020Jul27-225533_eval_dreamer_all/"
     match_check = "timesteps ([0-9]+)"
     match_validation = "19999744"
-    full_job_id = "538754"
 
     # get running jobs
     result = subprocess.run(['squeue', '--long','-u', 'nicaandr'], stdout=subprocess.PIPE, encoding='utf8')
@@ -32,7 +31,7 @@ if __name__ == "__main__":
         with open(slurm_log_file, "r") as f:
             file_content = f.readlines()
 
-        id_num = None
+        full_job_id = None
         exp_file = ""
 
         for line in file_content:
@@ -40,6 +39,11 @@ if __name__ == "__main__":
                 mmm = re.match("Running sbatch array job ([0-9]+)", line)
                 if mmm is not None:
                     id_num = mmm[1]
+
+            elif line.startswith("Running sbatch job"):
+                mmm = re.match("Running sbatch job ([0-9]+)", line)
+                if mmm is not None:
+                    full_job_id = mmm[1]
 
             elif exp_path in line and line.startswith(" date"):
                 start_file = re.findall(f"{exp_path}.*\.__start", line)[0]
@@ -62,12 +66,12 @@ if __name__ == "__main__":
         else:
             print(f"NO OUT: {exp_file}")
 
-        if id_num is not None and finished_correctly:
-            print(f"JOB {id_num} finished ({exp_file})")
-            finished_jobs.append(id_num)
+        if id_num is not None and full_job_id is not None and finished_correctly:
+            print(f"JOB {full_job_id}_{id_num} finished ({exp_file})")
+            finished_jobs.append(f"{full_job_id}_{id_num}")
 
     for job_id in finished_jobs:
-        print(f"scancel {full_job_id}_{job_id} --hurry -f")
+        print(f"scancel {job_id} --hurry -f")
 
 
 
