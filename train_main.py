@@ -12,9 +12,9 @@ from argparse import Namespace
 
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
-from a2c_ppo_acktr.envs import make_vec_envs
+from a2c_ppo_acktr.envs import make_vec_envs, make_vec_envs_state
 from a2c_ppo_acktr.storage import RolloutStorage
-from evaluation import evaluate_same_env
+from evaluation import evaluate_same_env, evaluate_first_ep
 
 from models.model import Policy
 from models import get_model
@@ -194,6 +194,11 @@ def run(args):
     repeat_eval_eps = getattr(args, "repeat_eval_eps", 1)
     eval_env_max_steps = 6000 * (eval_episodes // args.num_processes + 1)
 
+    # load eval envs checkpoints
+    num_batch_eval_ckpt_envs = 10
+    eval_checkpoint_envs = np.load("env_test_states.npy", allow_pickle=True).item()[args.env_name]
+    eval_checkpoint_envs = eval_checkpoint_envs[: (num_batch_eval_ckpt_envs * args.num_processes)]  # 80
+
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -345,6 +350,30 @@ def run(args):
                         base_score = eval_info["eval_reward"]
                 elif base_score is not None:
                     eval_inf[f"{eval_name}_gap"] = base_score - eval_info["eval_reward"]
+
+            # --------------------------------------------------------------------------------------
+            # Eval from checkpoint
+            ckpt_r = []
+            for batch_i in range(0, len(eval_checkpoint_envs), args.num_processes):
+                eval_states = eval_checkpoint_envs[batch_i: batch_i + args.num_processes]
+
+                eval_envs = make_vec_envs_state(args.env_name, args.seed + args.num_processes,
+                                                args.num_processes, args.gamma, eval_log_dir, device,
+                                                True, eval_states)
+
+                eval_kwargs["eval_envs"] = eval_envs
+                eval_info = evaluate_first_ep(actor_critic, ob_rms, args.num_processes, device,
+                                              eval_envs=eval_envs)
+                eval_envs.close()
+
+                ckpt_r += eval_info["eval_reward"]
+
+            eval_inf[f"eval_ckpt_reward"] = np.mean(ckpt_r)
+            if base_score != 0 and base_score is not None:
+                eval_inf[f"eval_ckpt_reward_gap"] = base_score - np.mean(ckpt_r)
+
+            print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
+                len(ckpt_r), np.mean(ckpt_r)))
 
             # --------------------------------------------------------------------------------------
 

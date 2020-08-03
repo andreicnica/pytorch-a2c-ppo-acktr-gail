@@ -1,0 +1,11 @@
+env_name: ['QbertNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'CrazyClimberNoFrameskip-v4',
+           'BankHeistNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'FishingDerbyNoFrameskip-v4',
+           'AmidarNoFrameskip-v4', 'RoadRunnerNoFrameskip-v4', 'SeaquestNoFrameskip-v4',
+           'VideoPinballNoFrameskip-v4', 'AssaultNoFrameskip-v4']
+
+model:
+  - name: CNNBase
+  - name: Resnetish
+  - name: Dreamer
+
+

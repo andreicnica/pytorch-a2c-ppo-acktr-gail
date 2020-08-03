@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from a2c_ppo_acktr import utils
-from a2c_ppo_acktr.envs import make_vec_envs
+from a2c_ppo_acktr.envs import make_vec_envs, make_vec_envs_state
 
 
 def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
@@ -135,4 +135,55 @@ def evaluate_same_env(actor_critic, ob_rms, num_processes, device, eval_envs=Non
     return {
         # "eval_ep_cnt": len(eval_episode_rewards),
         "eval_reward": np.mean(eval_episode_rewards)
+    }
+
+
+def evaluate_first_ep(actor_critic, ob_rms, num_processes, device, eval_envs=None, eps=0.0):
+
+    vec_norm = utils.get_vec_normalize(eval_envs)
+    if vec_norm is not None:
+        vec_norm.eval()
+        vec_norm.ob_rms = ob_rms
+
+    eval_episode_rewards = dict({})
+
+    # obs = eval_envs.reset()
+    # Do not reset - take step
+    obs, _, done, infos = eval_envs.step(
+        torch.tensor([np.random.randint(eval_envs.action_space.n) for _ in range(num_processes)]).unsqueeze(1)
+    )
+
+    eval_recurrent_hidden_states = torch.zeros(
+        num_processes, actor_critic.recurrent_hidden_state_size, device=device)
+    eval_masks = torch.zeros(num_processes, 1, device=device)
+
+    while len(eval_episode_rewards) < num_processes:
+        with torch.no_grad():
+            _, action, _, eval_recurrent_hidden_states = actor_critic.act(
+                obs,
+                eval_recurrent_hidden_states,
+                eval_masks,
+                deterministic=False, eps=eps)
+
+        # Obser reward and next obs
+        obs, _, done, infos = eval_envs.step(action)
+
+        eval_masks = torch.tensor(
+            [[0.0] if done_ else [1.0] for done_ in done],
+            dtype=torch.float32,
+            device=device)
+
+        for idx, info in enumerate(infos):
+            if 'episode' in info.keys() and idx not in eval_episode_rewards:
+                eval_episode_rewards[idx] = info['episode']['r']
+
+    eval_envs.close()
+
+    eval_episode_rewards = list(eval_episode_rewards.values())
+
+    # print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
+    #     len(eval_episode_rewards), np.mean(eval_episode_rewards)))
+
+    return {
+        "eval_reward": eval_episode_rewards
     }
