@@ -42,6 +42,7 @@ if __name__ == "__main__":
                     if mtch_out_answ == match_validation:
                         clean = False
 
-        if not clean:
-            print(f"{dirname}")
-
+        # if not clean:
+        #     print(f"{dirname}")
+        if clean:
+            print(cmd.format(dirname))
