@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     exp_path = f"/network/tmp1/nicaandr/pytorch-a2c-ppo-acktr-gail/{exp_name}/"
 
-    cfgs = glob.glob(f"{exp_path}/**/**/cfg.yaml", recursive=True)
+    cfgs = list(set(glob.glob(f"{exp_path}/**/**/cfg.yaml", recursive=True)))
     outs = glob.glob(f"{exp_path}/**/**/out", recursive=True)
 
     match_check = "timesteps ([0-9]+)"
