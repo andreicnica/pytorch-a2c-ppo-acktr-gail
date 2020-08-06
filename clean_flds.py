@@ -18,7 +18,7 @@ if __name__ == "__main__":
     outs = glob.glob(f"{exp_path}/**/**/out", recursive=True)
 
     match_check = "timesteps ([0-9]+)"
-    cmd = "ls -1a {} | grep -v cfg.yaml | grep -v .__leaf | xargs rm"
+    cmd = "cd {}; ls -1a | grep -v cfg.yaml | grep -v .__leaf | xargs rm ; cd ~/pytorch-a2c-ppo-acktr-gail"
 
     for cfg in cfgs:
         dirname = os.path.dirname(cfg)
